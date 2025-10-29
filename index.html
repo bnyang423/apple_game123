@@ -47,6 +47,15 @@
       font-weight: bold;
       display: none;
       text-shadow: 1px 1px 8px #fff;
+      background: #fff;
+      border-radius: 18px;
+      box-shadow: 0 2px 18px #ccc;
+      width: 500px;
+      margin-left: auto;
+      margin-right: auto;
+      padding: 18px 0 18px 0;
+      position: relative;
+      z-index: 20;
     }
     #endmsg .score {
       color: #333;
@@ -323,14 +332,18 @@
         dragging = false;
         draw();
         // 사과를 없앤 후 더 이상 가능한 그룹이 없으면 게임오버
-        if(!hasRemovableGroup()) endGame("지울 수 있는 사과가 없습니다.");
+        setTimeout(() => {
+          if(!hasRemovableGroup()) endGame("지울 수 있는 사과가 없습니다.");
+        }, 10);
         return;
       }
       selected = null;
       dragging = false;
       draw();
       // 드래그 후에도 더 이상 가능한 그룹이 없으면 게임오버
-      if(!hasRemovableGroup()) endGame("지울 수 있는 사과가 없습니다.");
+      setTimeout(() => {
+        if(!hasRemovableGroup()) endGame("지울 수 있는 사과가 없습니다.");
+      }, 10);
     });
 
     // 타이머 관련 함수
@@ -355,6 +368,7 @@
 
     // 게임오버 화면 표시
     function endGame(reasonText) {
+      if(!gameActive) return; // 이미 끝났으면 중복 호출 방지
       gameActive = false;
       // 최고점수 갱신
       if(score > highscore) {
@@ -362,7 +376,8 @@
         localStorage.setItem("fruitbox_highscore", String(highscore));
       }
       updateHighscoreBoard();
-      document.getElementById('endmsg').style.display = "";
+      // 게임오버 메시지와 점수, 최고점수 표시
+      document.getElementById('endmsg').style.display = "block";
       document.querySelector('#endmsg .msg').textContent = "게임 오버!";
       document.querySelector('#endmsg .score').textContent = `최종 점수: ${score}점`;
       document.querySelector('#endmsg .highscore').textContent = `최고점수: ${highscore}점`;

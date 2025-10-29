@@ -48,6 +48,37 @@
       display: none;
       text-shadow: 1px 1px 8px #fff;
     }
+    #endmsg .score {
+      color: #333;
+      font-size: 22px;
+      margin: 10px 0 0 0;
+      display: block;
+      font-weight: normal;
+    }
+    #endmsg .highscore {
+      color: #1976d2;
+      font-size: 22px;
+      margin: 2px 0 0 0;
+      display: block;
+      font-weight: normal;
+    }
+    #endmsg .btn {
+      margin-top: 18px;
+      font-size: 18px;
+      padding: 7px 24px;
+      background: #fff8fa;
+      color: #f00;
+      border: 2px solid #f00;
+    }
+    #highscoreboard {
+      font-size: 18px;
+      margin: 0 0 8px 0;
+      color: #1976d2;
+      text-align: left;
+      width: 850px;
+      margin-left: auto;
+      margin-right: auto;
+    }
   </style>
 </head>
 <body>
@@ -55,11 +86,17 @@
     <div id="timerbar"></div>
     <div id="timer-txt">02:00</div>
   </div>
+  <div id="highscoreboard">최고점수: <span id="highscore">0</span></div>
   <div id="scoreboard">점수: <span id="score">0</span></div>
   <div id="btns">
     <button class="btn" onclick="initGame()">다시 시작</button>
   </div>
-  <div id="endmsg">시간 종료!</div>
+  <div id="endmsg">
+    <div class="msg"></div>
+    <span class="score"></span>
+    <span class="highscore"></span>
+    <button class="btn" onclick="initGame()">다시 시작</button>
+  </div>
   <canvas id="game"></canvas>
   <script>
     // 게임 설정
@@ -78,6 +115,13 @@
     let apples = [];
     let selected = null;
     let score = 0;
+
+    // 최고점수 기록 (localStorage 사용)
+    let highscore = Number(localStorage.getItem("fruitbox_highscore")) || 0;
+
+    function updateHighscoreBoard() {
+      document.getElementById("highscore").textContent = highscore;
+    }
 
     const canvas = document.getElementById('game');
     const ctx = canvas.getContext('2d');
@@ -145,6 +189,7 @@
       gameActive = true;
       document.getElementById('endmsg').style.display = "none";
       updateTimerBar();
+      updateHighscoreBoard();
       draw();
       if(timerInterval) clearInterval(timerInterval);
       timerInterval = setInterval(updateTimer, 1000);
@@ -218,6 +263,25 @@
       return sum===10;
     }
 
+    // 합이 10이 되는 그룹이 남아있는지 검사
+    function hasRemovableGroup() {
+      // 모든 직사각형 영역을 순회(최대 6칸 이하로 제한, 2칸~6칸)
+      for(let sy=0; sy<ROWS; sy++) {
+        for(let sx=0; sx<COLS; sx++) {
+          for(let ey=sy; ey<Math.min(ROWS, sy+3); ey++) {
+            for(let ex=sx; ex<Math.min(COLS, sx+3); ex++) {
+              let applesArr = getApplesInRect(sx, sy, ex, ey);
+              // 2~6개 사과만 검사(너무 큰 영역은 무시)
+              if(applesArr.length>=2 && applesArr.length<=6 && checkSum10(applesArr)) {
+                return true;
+              }
+            }
+          }
+        }
+      }
+      return false;
+    }
+
     // 마우스 이벤트
     let dragging = false;
     let startCell = null;
@@ -255,10 +319,18 @@
         applesArr.forEach(a=>{apples[a.y][a.x].gone=true;});
         score += applesArr.length;
         document.getElementById('score').textContent = score;
+        selected = null;
+        dragging = false;
+        draw();
+        // 사과를 없앤 후 더 이상 가능한 그룹이 없으면 게임오버
+        if(!hasRemovableGroup()) endGame("지울 수 있는 사과가 없습니다.");
+        return;
       }
       selected = null;
       dragging = false;
       draw();
+      // 드래그 후에도 더 이상 가능한 그룹이 없으면 게임오버
+      if(!hasRemovableGroup()) endGame("지울 수 있는 사과가 없습니다.");
     });
 
     // 타이머 관련 함수
@@ -266,30 +338,42 @@
       timer--;
       if(timer < 0) {
         timer = 0;
-        endGame();
+        endGame("제한 시간이 끝났습니다.");
       }
       updateTimerBar();
     }
 
     function updateTimerBar() {
-      // 남은 시간 게이지
       const bar = document.getElementById('timerbar');
       const txt = document.getElementById('timer-txt');
       const percent = Math.max(0, timer) / LIMIT_SEC;
       bar.style.width = (percent*100*8.5) + "px";
-      // 시간 텍스트 MM:SS
       let mm = String(Math.floor(timer/60)).padStart(2,'0');
       let ss = String(timer%60).padStart(2,'0');
       txt.textContent = `${mm}:${ss}`;
     }
 
-    function endGame() {
+    // 게임오버 화면 표시
+    function endGame(reasonText) {
       gameActive = false;
+      // 최고점수 갱신
+      if(score > highscore) {
+        highscore = score;
+        localStorage.setItem("fruitbox_highscore", String(highscore));
+      }
+      updateHighscoreBoard();
       document.getElementById('endmsg').style.display = "";
+      document.querySelector('#endmsg .msg').textContent = "게임 오버!";
+      document.querySelector('#endmsg .score').textContent = `최종 점수: ${score}점`;
+      document.querySelector('#endmsg .highscore').textContent = `최고점수: ${highscore}점`;
+      if(reasonText) {
+        document.querySelector('#endmsg .score').textContent += `\n(${reasonText})`;
+      }
       if(timerInterval) clearInterval(timerInterval);
     }
 
     // 첫 시작
+    updateHighscoreBoard();
     initGame();
   </script>
 </body>

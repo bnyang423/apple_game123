@@ -235,8 +235,8 @@
       document.getElementById('gameover-overlay').style.display = "none";
       updateTimerBar();
       updateHighscoreBoard();
-      draw();
       updateGroupCountBoard();
+      draw();
       if(timerInterval) clearInterval(timerInterval);
       timerInterval = setInterval(updateTimer, 1000);
     }
